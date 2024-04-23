@@ -75,8 +75,7 @@ var batchesAddedSuccessfully: number =
 
 Having troubles?
 
-- Ask on Twitter [@ogiacomelli](http://twitter.com/ogiacomelli)
-- Ask on [Stack Overflow](http://stackoverflow.com/search?q=BuxferSharp)
+- Ask on Twitter [@NissanTagar](https://twitter.com/NissanTagar)
 
 ---
 
