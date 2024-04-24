@@ -93,4 +93,4 @@ In others words, you can use this library for development any kind of software: 
 
 # Change Log
 
-0.5.0 First version.
+1.0.0 First version.
