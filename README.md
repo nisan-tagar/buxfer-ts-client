@@ -1,6 +1,7 @@
 # buxfer-ts-client
 
 [![License](http://img.shields.io/:license-MIT-blue.svg)](https://github.com/nissant/buxfer-ts-client/blob/main/LICENSE)
+[![NPM](buxfer-ts-client)](https://www.npmjs.com/package/buxfer-ts-client)
 
 buxfer-ts-client is an easy-to-use Type Script client library to [Buxfer API](https://www.buxfer.com/help/api).
 
