@@ -17,49 +17,50 @@ buxfer-ts-client is an easy-to-use Type Script client library to [Buxfer API](ht
 
 ```typescript
 // Creating client.
-var client = new BuxferApiClient("<your user>", "<your password>");
+let client = new BuxferApiClient("<your user>", "<your password>");
 
 // Getting all accounts.
-var accounts = client.getAccounts();
+let accounts = await client.getAccounts();
 
 // Getting all budgets.
-var budgets = client.getBudgets();
+let budgets = await client.getBudgets();
 
 // Getting all contacts.
-var contacts = client.getContacts();
+let contacts = await client.getContacts();
 
 // Getting all groups.
-var groups = client.getGroups();
+let groups = await client.getGroups();
 
 // Getting all loans.
-var loans = client.getLoans();
+let loans = await client.getLoans();
 
 // Getting all reminders.
-var reminders = client.getReminders();
+let reminders = await client.getReminders();
 
 // Upload a statement.
 -TODO;
-// var statement = new Statement();
+// let statement = new Statement();
 // statement.AccountId = "<account id>";
 // statement.Text = "<Quicken, MS Money, OFX, QIF, QFX, Excel, CSV file content>";
 // bool uploaded = client.uploadStatement(statement);
 
 // Getting all tags.
-var tags = client.getTags();
+let tags = await client.getTags();
 
 // Getting last 100 transactions.
-var lastTransactions = client.getTransactions();
+let lastTransactions = await client.getTransactions();
 
 // Getting last transactions from page 2.
--TODO;
+let queryParams = new GetTransactionsQueryParameters();
+queryParams.page = 2;
+queryParams.accountId = accounts[0].id;
+let transactions = await buxferClient.getTransactions(queryParams);
 
 // Add a transaction.
-
-var transactions: BuxferTransaction[];
-
+let transactions: BuxferTransaction[];
 // Populate new Buxfer transactions to be added
-var batchesAddedSuccessfully: number =
-  client.sendBulkAddedTransactions(transactions);
+let batchesAddedSuccessfully: number =
+  await client.sendBulkAddedTransactions(transactions);
 ```
 
 ---
@@ -88,7 +89,7 @@ Did you change it? [Submit a pull request](https://github.com/nissant/buxfer-ts-
 # License
 
 Licensed under the The MIT License (MIT).
-In others words, you can use this library for developement any kind of software: open source, commercial, proprietary and alien.
+In others words, you can use this library for development any kind of software: open source, commercial, proprietary and alien.
 
 # Change Log
 

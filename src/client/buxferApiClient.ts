@@ -1,5 +1,8 @@
 import axios, { AxiosRequestConfig } from 'axios';
-import { BuxferTransaction, BuxferAccount, BuxferLoan, BuxferTag, BuxferBudget, BuxferReminder, BuxferGroup, BuxferContact } from '../interface'
+import {
+    BuxferTransaction, BuxferAccount, BuxferLoan,
+    BuxferTag, BuxferBudget, BuxferReminder, BuxferGroup, BuxferContact
+} from '../interface'
 
 interface BuxferResponseBase {
     status: string;
@@ -137,12 +140,11 @@ export class BuxferApiClient {
     /**
      * Each call to this method returns at most 100 transactions matching the specified criteria. 
      * If there are more that 100 results, you can specify increasing values of the page parameter to page through the results.
-     * @param accountId Optional account ID to retrieve transactions
-     * @param page Option page number of previous 100 transactions 
+     * @param queryParams Optional api query params for filtering the fetched transactions
      * @returns List of buxfer transactions
      */
-    async getTransactions(accountId?: string, page?: number): Promise<BuxferTransaction[]> {
-        let response = await this.makeApiRequest<GetTransactionsResponseData>("transactions", "GET", { accountId, page })
+    async getTransactions(queryParams?: Record<string, any>): Promise<BuxferTransaction[]> {
+        let response = await this.makeApiRequest<GetTransactionsResponseData>("transactions", "GET", queryParams)
         return response.transactions;
     }
 
@@ -200,15 +202,13 @@ export class BuxferApiClient {
         return response.contacts;
     }
 
-     /**
-     * 
-     * @returns List of user groups
-     */
-     async getGroups(): Promise<BuxferGroup[]> {
+    /**
+    * 
+    * @returns List of user groups
+    */
+    async getGroups(): Promise<BuxferGroup[]> {
         let response = await this.makeApiRequest<GetGroupsResponseData>("groups", "GET")
         return response.groups;
     }
 
 }
-
-

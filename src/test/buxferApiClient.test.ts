@@ -1,4 +1,5 @@
 import { BuxferApiClient } from '../client/buxferApiClient';
+import { GetTransactionsQueryParameters } from '../interface';
 import dotenv from 'dotenv';
 dotenv.config({ path: 'src/test/.env.test' }); // Load environment variables from .env.test
 
@@ -26,10 +27,20 @@ describe('BuxferApiClient', () => {
         //console.log(`Accounts: ${accounts}`)
     });
 
-    it('should retrieve transactions', async () => {
+    it('should retrieve last 100 transactions', async () => {
         let transactions = await buxferClient.getTransactions();
         expect(transactions.length).toBeGreaterThan(0);
         //console.log(`First 100 transactions: ${transactions}`)
+    });
+
+    it('should retrieve 100 transactions of account ID by page', async () => {
+        let accounts = await buxferClient.getAccounts();
+        let queryParams = new GetTransactionsQueryParameters();
+        queryParams.page = 2;
+        queryParams.accountId = accounts[0].id;
+        let transactions = await buxferClient.getTransactions(queryParams);
+        expect(transactions.length).toBeGreaterThan(0);
+        //console.log(`Queried transactions: ${transactions}`)
     });
 
     it('should retrieve tags', async () => {

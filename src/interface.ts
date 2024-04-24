@@ -9,6 +9,47 @@ export interface BuxferAccount {
     // ...
 }
 
+export class GetTransactionsQueryParameters {
+    accountId!: string;
+    accountName!: string;
+    tagId!: string;
+    // startDate AND endDate OR month: date can be specified as "10 feb 2008", or "2008-02-10". month can be specified as "feb08", "feb 08", or "feb 2008".
+    startDate!: string;
+    endDate!: string;
+    month!: string;
+    // budgetId OR budgetName
+    budgetId!: string;
+    budgetName!: string;
+    // contactId OR contactName
+    contactId!: string;
+    contactName!: string;
+    // groupId OR groupName
+    groupId!: string;
+    groupName!: string;
+    status!: "pending" | "reconciled" | "cleared";
+    page!: number;
+
+    // Method to return a Record<string, any> from populated attributes
+    getAttributesAsRecord(): Record<string, any> {
+        return {
+            accountId: this.accountId,
+            accountName: this.accountName,
+            tagId: this.tagId,
+            startDate: this.startDate,
+            endDate: this.endDate,
+            month: this.month,
+            budgetId: this.budgetId,
+            budgetName: this.budgetName,
+            contactId: this.contactId,
+            contactName: this.contactName,
+            groupId: this.groupId,
+            groupName: this.groupName,
+            status: this.status,
+            page: this.page,
+        };
+    }
+}
+
 export interface BuxferTransaction {
     id?: number;
     description: string;
