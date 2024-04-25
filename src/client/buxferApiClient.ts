@@ -1,7 +1,9 @@
 import axios, { AxiosRequestConfig } from 'axios';
+import { getTransactionsDateRange, deduplicateTransactions } from './transactionUtils'
 import {
     BuxferTransaction, BuxferAccount, BuxferLoan,
-    BuxferTag, BuxferBudget, BuxferReminder, BuxferGroup, BuxferContact
+    BuxferTag, BuxferBudget, BuxferReminder, BuxferGroup, BuxferContact,
+    GetTransactionsQueryParameters
 } from '../interface'
 
 interface BuxferResponseBase {
@@ -70,14 +72,24 @@ export class BuxferApiClient {
                 { email: this.email, password: this.password }
             );
             this.authToken = response.token;
-            console.log('Login successful. Token:', this.authToken);
+            this.log(`Login successful. Token: ${this.authToken}`, "info");
         } catch (error: unknown) {
             if (error instanceof Error) {
-                console.error('Error during login:', error.message);
+                this.log(`Error during login: ${error.message}`, "error");
             } else {
-                console.error('Unknown error occurred');
+                this.log('Unknown error occurred', "error");
             }
             throw error;
+        }
+    }
+
+    private log(msg: string, level: "info" | "error") {
+        switch (level) {
+            case "info":
+                // todo - configure per verbosity level
+                break;
+            case "error":
+                console.error(msg);
         }
     }
 
@@ -101,21 +113,47 @@ export class BuxferApiClient {
             data: method === 'POST' ? JSON.stringify(data) : undefined,
         };
 
+        this.log(JSON.stringify(config), "info");
         try {
             let response = (await axios.request<BuxferResponseContainer>(config)).data;
             return response.response;
         } catch (error) {
             if (error instanceof Error) {
-                console.error(`Error making ${method} API request:`, error.message);
+                this.log(`Error making ${method} API request: ${error.message}`, "error");
             } else {
-                console.error('Unknown error occurred');
+                this.log("Unknown error occurred", "error");
             }
             throw error;
         }
     }
 
-    // Method to send POST requests in parallel with batching
-    public async sendBulkAddedTransactions<T>(bodies: BuxferTransaction[]): Promise<number> {
+    /**
+     * Send batched POST requests in parallel
+     * @param transactions List of Buxfer transactions to be added
+     * @param deduplicate Select if transaction deduplication is required
+     * @returns successfully added transaction bulks each of size 20.
+     */
+    public async addTransactions(transactions: BuxferTransaction[], deduplicate: boolean): Promise<number> {
+        if (!deduplicate) {
+            return this.addTransactionBulks(transactions);
+        }
+
+        // Resolve transaction date range
+        let [startDate, endDate] = getTransactionsDateRange(transactions);
+
+        // Get existing transactions within the range
+        let params: GetTransactionsQueryParameters = new GetTransactionsQueryParameters();
+        params.startDate = startDate;
+        params.endDate = endDate;
+        let dbTransactions: BuxferTransaction[] = await this.getTransactions(params);
+
+        // Deduplicate transactions
+        transactions = deduplicateTransactions(transactions, dbTransactions);
+
+        return this.addTransactionBulks(transactions);
+    }
+
+    private async addTransactionBulks<T>(bodies: BuxferTransaction[]): Promise<number> {
         // Split the bodies array into chunks of bulkSize
         let batchIndex = 0;
         let failedBatchCount = 0;
@@ -127,9 +165,9 @@ export class BuxferApiClient {
 
             // Wait for all POST requests in the current batch to complete
             await Promise.all(promises).then(results => {
-                console.log(`Batch ${batchIndex} completed: ${results.length} transactions updated`);
+                this.log(`Batch ${batchIndex} completed: ${results.length} transactions updated`, "info");
             }).catch(error => {
-                console.error(`Error with batch: ${batchIndex}`, error);
+                this.log(`Error with batch: ${batchIndex} - ${error}`, "error");
                 failedBatchCount++;
             });
             batchIndex++;
@@ -144,7 +182,7 @@ export class BuxferApiClient {
      * @returns List of buxfer transactions
      */
     async getTransactions(queryParams?: Record<string, any>): Promise<BuxferTransaction[]> {
-        let response = await this.makeApiRequest<GetTransactionsResponseData>("transactions", "GET", queryParams)
+        let response = await this.makeApiRequest<GetTransactionsResponseData>("transactions", "GET", undefined, queryParams)
         return response.transactions;
     }
 

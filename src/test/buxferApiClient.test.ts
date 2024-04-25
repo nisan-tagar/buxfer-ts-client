@@ -1,5 +1,6 @@
 import { BuxferApiClient } from '../client/buxferApiClient';
 import { GetTransactionsQueryParameters } from '../interface';
+import { deduplicateTransactions, getTransactionsDateRange } from '../client/transactionUtils';
 import dotenv from 'dotenv';
 dotenv.config({ path: 'src/test/.env.test' }); // Load environment variables from .env.test
 
@@ -33,7 +34,7 @@ describe('BuxferApiClient', () => {
         //console.log(`First 100 transactions: ${transactions}`)
     });
 
-    it('should retrieve 100 transactions of account ID by page', async () => {
+    it('should retrieve up to 100 transactions of account ID by page number', async () => {
         let accounts = await buxferClient.getAccounts();
         let queryParams = new GetTransactionsQueryParameters();
         queryParams.page = 2;
@@ -41,6 +42,31 @@ describe('BuxferApiClient', () => {
         let transactions = await buxferClient.getTransactions(queryParams);
         expect(transactions.length).toBeGreaterThan(0);
         //console.log(`Queried transactions: ${transactions}`)
+    });
+
+    it('should retrieve up to 100 transactions by date range and deduplicate', async () => {
+        let queryParams = new GetTransactionsQueryParameters();
+        queryParams.startDate = "2024-01-01";
+        queryParams.endDate = "2024-02-01";
+    
+        let dbTransactions = await buxferClient.getTransactions(queryParams);
+        expect(dbTransactions.length).toBeGreaterThan(0);
+        
+        let [earliestTrxDate, latestTrxDate] = getTransactionsDateRange(dbTransactions);
+
+        // Validate earliest transaction date
+        const expectedEarliestTransactionDate = new Date(queryParams.startDate);
+        expect(expectedEarliestTransactionDate <= new Date(earliestTrxDate)).toBeTruthy();
+
+        // Validate latest transaction date
+        console.log(`latestTrxDate:${latestTrxDate} expectedLatestTransactionDate:${queryParams.endDate}`)
+        const expectedLatestTransactionDate = new Date(queryParams.endDate);
+        expect(expectedLatestTransactionDate >= new Date(latestTrxDate)).toBeTruthy();
+
+        // Validate deduplicate logic
+        let deduplicatedTrx = deduplicateTransactions(dbTransactions, dbTransactions);
+        expect(deduplicatedTrx.length).toBe(0);
+
     });
 
     it('should retrieve tags', async () => {

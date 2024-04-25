@@ -51,24 +51,26 @@ let tags = await client.getTags();
 // Getting last 100 transactions.
 let lastTransactions = await client.getTransactions();
 
-// Getting last transactions from page 2.
+// Getting transactions by supported query parameters
 let queryParams = new GetTransactionsQueryParameters();
-queryParams.page = 2;
-queryParams.accountId = accounts[0].id;
-let transactions = await buxferClient.getTransactions(queryParams);
+queryParams.startDate = "2024-01-01";
+queryParams.endDate = "2024-02-01";
+let dbTransactions = await buxferClient.getTransactions(queryParams);
 
 // Add a transaction.
 let transactions: BuxferTransaction[];
+
 // Populate new Buxfer transactions to be added
-let batchesAddedSuccessfully: number =
-  await client.sendBulkAddedTransactions(transactions);
+// ...
+
+let batchesAddedSuccessfully: number = await client.sendBulkAddedTransactions(
+  transactions
+);
 ```
 
 ---
 
 ## Roadmap
-
-- Create and publish Node package.
 - Build on [moneyman](https://github.com/daniel-hauser/moneyman) application.
 
 ---
