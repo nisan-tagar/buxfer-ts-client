@@ -1,9 +1,9 @@
 import axios, { AxiosRequestConfig } from 'axios';
-import { getTransactionsDateRange, deduplicateTransactions } from './transactionUtils'
+import { getTransactionsDateRange, filterDuplicateTransactions } from './transactionUtils'
 import {
     BuxferTransaction, BuxferAccount, BuxferLoan,
     BuxferTag, BuxferBudget, BuxferReminder, BuxferGroup, BuxferContact,
-    GetTransactionsQueryParameters
+    GetTransactionsQueryParameters, AddTransactionsResponse
 } from '../interface'
 
 interface BuxferResponseBase {
@@ -57,7 +57,7 @@ interface BuxferResponseContainer {
 export class BuxferApiClient {
     private readonly baseUrl: string;
     private authToken: string | null = null;
-    private bulkSize: number = 20; // Class variable for bulk size
+    private batchSize: number = 20; // Class variable for bulk size
 
     constructor(private readonly email: string, private readonly password: string) {
         this.baseUrl = 'https://www.buxfer.com/api';
@@ -129,50 +129,63 @@ export class BuxferApiClient {
 
     /**
      * Send batched POST requests in parallel
-     * @param transactions List of Buxfer transactions to be added
-     * @param deduplicate Select if transaction deduplication is required
-     * @returns successfully added transaction bulks each of size 20.
+     * @param scrappedTransactions List of Buxfer transactions to be added, typically from a web scraping application
+     * @param deduplicate Select if transaction deduplication against the buxfer db is required
+     * @returns AddTransactionsResponse response object summary
      */
-    public async addTransactions(transactions: BuxferTransaction[], deduplicate: boolean): Promise<number> {
+    public async addTransactions(scrappedTransactions: BuxferTransaction[], deduplicate: boolean): Promise<AddTransactionsResponse> {
         if (!deduplicate) {
-            return this.addTransactionBulks(transactions);
+            return await this.addTransactionBulks(scrappedTransactions);
         }
 
-        // Resolve transaction date range
-        let [startDate, endDate] = getTransactionsDateRange(transactions);
-
-        // Get existing transactions within the range
-        let params: GetTransactionsQueryParameters = new GetTransactionsQueryParameters();
-        params.startDate = startDate;
-        params.endDate = endDate;
-        let dbTransactions: BuxferTransaction[] = await this.getTransactions(params);
-
-        // Deduplicate transactions
-        transactions = deduplicateTransactions(transactions, dbTransactions);
-
-        return this.addTransactionBulks(transactions);
+        return await this.deduplicateAddTransactionBulks(scrappedTransactions);
     }
 
-    private async addTransactionBulks<T>(bodies: BuxferTransaction[]): Promise<number> {
+    private async deduplicateAddTransactionBulks(scrappedTransactions: BuxferTransaction[]): Promise<AddTransactionsResponse> {
+        // Resolve transaction date range
+        const [startDate, endDate] = getTransactionsDateRange(scrappedTransactions);
+
+        // Get existing db transactions within the date range
+        const params: GetTransactionsQueryParameters = new GetTransactionsQueryParameters();
+        params.startDate = startDate;
+        params.endDate = endDate;
+        const dbTransactions: BuxferTransaction[] = await this.getTransactions(params);
+
+        // Deduplicate transactions
+        const newTransactions = filterDuplicateTransactions(scrappedTransactions, dbTransactions);
+        const response = await this.addTransactionBulks(newTransactions);
+        response.duplicatedTransactions = scrappedTransactions.length - newTransactions.length;
+        return response;
+    }
+
+    private async addTransactionBulks<T>(bodies: BuxferTransaction[]): Promise<AddTransactionsResponse> {
         // Split the bodies array into chunks of bulkSize
         let batchIndex = 0;
-        let failedBatchCount = 0;
-        for (let i = 0; i < bodies.length; i += this.bulkSize) {
-            const batch = bodies.slice(i, i + this.bulkSize);
+        const response: AddTransactionsResponse = {
+            addedTransactions: 0,
+            duplicatedTransactions: 0,
+            transactionBatchSize: this.batchSize,
+            successfulBatches: 0,
+            failedBatches: 0
+        }
+        for (let i = 0; i < bodies.length; i += this.batchSize) {
+            const batch = bodies.slice(i, i + this.batchSize);
 
             // Map each body in the current batch to a POST request promise
             const promises = batch.map(body => this.makeApiRequest<T>("transaction_add", 'POST', body));
 
             // Wait for all POST requests in the current batch to complete
             await Promise.all(promises).then(results => {
+                response.addedTransactions += results.length;
                 this.log(`Batch ${batchIndex} completed: ${results.length} transactions updated`, "info");
+                response.successfulBatches++;
             }).catch(error => {
                 this.log(`Error with batch: ${batchIndex} - ${error}`, "error");
-                failedBatchCount++;
+                response.failedBatches++;
             });
             batchIndex++;
         }
-        return failedBatchCount;
+        return response;
     }
 
     /**

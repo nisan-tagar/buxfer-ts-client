@@ -50,6 +50,14 @@ export class GetTransactionsQueryParameters {
     }
 }
 
+export interface AddTransactionsResponse {
+    addedTransactions: number;
+    duplicatedTransactions: number;
+    transactionBatchSize: number;
+    successfulBatches: number;
+    failedBatches: number;
+}
+
 export interface BuxferTransaction {
     id?: number;
     description: string;

@@ -71,6 +71,9 @@ let batchesAddedSuccessfully: number = await client.sendBulkAddedTransactions(
 ---
 
 ## Roadmap
+- Support transaction delete and edit methods
+- Completed sketched unit tests
+- Support automatic paginator to retrieve more than 100 transactions at a time by the client getter signatures
 - Build on [moneyman](https://github.com/daniel-hauser/moneyman) application.
 
 ---
@@ -80,6 +83,7 @@ let batchesAddedSuccessfully: number = await client.sendBulkAddedTransactions(
 Having troubles?
 
 - Ask on Twitter [@NissanTagar](https://twitter.com/NissanTagar)
+- E-mail me [tnisan@gmail.com](tnisan@gmail.com)
 
 ---
 

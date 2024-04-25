@@ -12,7 +12,7 @@ function transactionHash(tx: BuxferTransaction): string {
     return parts.map((p) => String(p ?? "")).join("_");
 }
 
-export function deduplicateTransactions(transactions: BuxferTransaction[], dbTransactions: BuxferTransaction[]): BuxferTransaction[] {
+export function filterDuplicateTransactions(transactions: BuxferTransaction[], dbTransactions: BuxferTransaction[]): BuxferTransaction[] {
     // Create a Set of existing transaction hashes from the database
     const existingHashes = new Set(dbTransactions.map(transactionHash));
 
