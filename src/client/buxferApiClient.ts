@@ -152,18 +152,18 @@ export class BuxferApiClient {
         const dbTransactions: BuxferTransaction[] = await this.getTransactions(params);
 
         // Deduplicate transactions
-        const newTransactions = filterDuplicateTransactions(scrappedTransactions, dbTransactions);
-        const response = await this.addTransactionBulks(newTransactions);
-        response.duplicatedTransactions = scrappedTransactions.length - newTransactions.length;
+        const [uniqueTransactions, duplicatedTransactions] = filterDuplicateTransactions(scrappedTransactions, dbTransactions);
+        const response = await this.addTransactionBulks(uniqueTransactions);
+        response.duplicatedTransactionIds = duplicatedTransactions.map(trx => trx.id ? trx.id.toString() : "");
         return response;
     }
 
-    private async addTransactionBulks<T>(bodies: BuxferTransaction[]): Promise<AddTransactionsResponse> {
+    private async addTransactionBulks(bodies: BuxferTransaction[]): Promise<AddTransactionsResponse> {
         // Split the bodies array into chunks of bulkSize
         let batchIndex = 0;
-        const response: AddTransactionsResponse = {
-            addedTransactions: 0,
-            duplicatedTransactions: 0,
+        const responseContainer: AddTransactionsResponse = {
+            addedTransactionIds: [],
+            duplicatedTransactionIds: [],
             transactionBatchSize: this.batchSize,
             successfulBatches: 0,
             failedBatches: 0
@@ -172,20 +172,34 @@ export class BuxferApiClient {
             const batch = bodies.slice(i, i + this.batchSize);
 
             // Map each body in the current batch to a POST request promise
-            const promises = batch.map(body => this.makeApiRequest<T>("transaction_add", 'POST', body));
+            const promises = batch.map(body => this.makeApiRequest<BuxferTransaction>("transaction_add", 'POST', body));
 
             // Wait for all POST requests in the current batch to complete
-            await Promise.all(promises).then(results => {
-                response.addedTransactions += results.length;
-                this.log(`Batch ${batchIndex} completed: ${results.length} transactions updated`, "info");
-                response.successfulBatches++;
+            await Promise.all(promises).then(responses => {
+                this.log(`Batch ${batchIndex} completed: ${responses.length} transactions updated`, "info");
+                responseContainer.successfulBatches++;
+                responses.forEach(trx => {
+                    if (trx.id) { // Returned transactions from Buxfer should include ID's
+                        responseContainer.addedTransactionIds.push(trx.id.toString());
+                    }
+
+                })
             }).catch(error => {
                 this.log(`Error with batch: ${batchIndex} - ${error}`, "error");
-                response.failedBatches++;
+                responseContainer.failedBatches++;
             });
             batchIndex++;
         }
-        return response;
+        return responseContainer;
+    }
+
+    /**
+     * Each call to this method removes a single transaction ID from Buxfer DB
+     * @param transactionId transaction ID to be deleted
+     * @returns empty object
+     */
+    async deleteTransaction(transactionId: string): Promise<Object> {
+        return await this.makeApiRequest<Object>("transaction_delete", "POST", { id: transactionId }, undefined)
     }
 
     /**

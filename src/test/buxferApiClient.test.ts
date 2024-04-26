@@ -1,7 +1,9 @@
-import { BuxferApiClient } from '../client/buxferApiClient';
-import { GetTransactionsQueryParameters } from '../interface';
-import { filterDuplicateTransactions, getTransactionsDateRange } from '../client/transactionUtils';
 import dotenv from 'dotenv';
+import { format } from "date-fns";
+import { BuxferApiClient } from '../client/buxferApiClient';
+import { BuxferTransaction, GetTransactionsQueryParameters, AddTransactionsResponse } from '../interface';
+import { filterDuplicateTransactions, getTransactionsDateRange } from '../client/transactionUtils';
+
 dotenv.config({ path: 'src/test/.env.test' }); // Load environment variables from .env.test
 
 const username = process.env.TEST_USERNAME;
@@ -23,33 +25,33 @@ describe('BuxferApiClient', () => {
     });
 
     it('should retrieve accounts', async () => {
-        let accounts = await buxferClient.getAccounts();
+        const accounts = await buxferClient.getAccounts();
         expect(accounts.length).toBeGreaterThan(0);
     });
 
     it('should retrieve last 100 transactions', async () => {
-        let transactions = await buxferClient.getTransactions();
+        const transactions = await buxferClient.getTransactions();
         expect(transactions.length).toBeGreaterThan(0);
     });
 
     it('should retrieve up to 100 transactions of account ID by page number', async () => {
-        let accounts = await buxferClient.getAccounts();
-        let queryParams = new GetTransactionsQueryParameters();
+        const accounts = await buxferClient.getAccounts();
+        const queryParams = new GetTransactionsQueryParameters();
         queryParams.page = 2;
         queryParams.accountId = accounts[0].id;
-        let transactions = await buxferClient.getTransactions(queryParams);
+        const transactions = await buxferClient.getTransactions(queryParams);
         expect(transactions.length).toBeGreaterThan(0);
     });
 
     it('should retrieve up to 100 transactions by date range and deduplicate', async () => {
-        let queryParams = new GetTransactionsQueryParameters();
+        const queryParams = new GetTransactionsQueryParameters();
         queryParams.startDate = "2024-01-01";
         queryParams.endDate = "2024-02-01";
 
-        let dbTransactions = await buxferClient.getTransactions(queryParams);
+        const dbTransactions = await buxferClient.getTransactions(queryParams);
         expect(dbTransactions.length).toBeGreaterThan(0);
 
-        let [earliestTrxDate, latestTrxDate] = getTransactionsDateRange(dbTransactions);
+        const [earliestTrxDate, latestTrxDate] = getTransactionsDateRange(dbTransactions);
 
         // Validate earliest transaction date
         const expectedEarliestTransactionDate = new Date(queryParams.startDate);
@@ -65,7 +67,31 @@ describe('BuxferApiClient', () => {
 
     });
 
-    it.todo('should upload and delete a mock transaction');
+    it.only('should add deduplicate and delete a mock transaction from Buxfer DB', async () => {
+        const nowDate = format(new Date(), "yyyy-MM-dd");
+        const mockTrx: BuxferTransaction = {
+            description: "mock",
+            amount: 12345,
+            date: nowDate,
+            type: "income",
+            status: "cleared",
+            accountId: "1398435"
+        }
+        // Add new mock transaction to DB
+        let response: AddTransactionsResponse = await buxferClient.addTransactions(new Array(mockTrx), true);
+        expect(response.addedTransactionIds.length).toBe(1);
+        expect(response.duplicatedTransactionIds.length).toBe(0);
+        const mockTrxId = response.addedTransactionIds[0];
+
+        // Add the same transaction a second time
+        response = await buxferClient.addTransactions(new Array(mockTrx), true);
+        expect(response.addedTransactionIds.length).toBe(0);
+        expect(response.duplicatedTransactionIds.length).toBe(1);
+
+        // delete mock transactions
+        const deleteResponse = await buxferClient.deleteTransaction(mockTrxId);
+        expect(deleteResponse).not.toBeNull;
+    });
 
     it('should retrieve tags', async () => {
         let tags = await buxferClient.getTags();

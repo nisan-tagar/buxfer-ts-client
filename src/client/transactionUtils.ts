@@ -12,14 +12,25 @@ function transactionHash(tx: BuxferTransaction): string {
     return parts.map((p) => String(p ?? "")).join("_");
 }
 
-export function filterDuplicateTransactions(transactions: BuxferTransaction[], dbTransactions: BuxferTransaction[]): BuxferTransaction[] {
-    // Create a Set of existing transaction hashes from the database
+export function filterDuplicateTransactions(
+    addedTransactions: BuxferTransaction[],
+    dbTransactions: BuxferTransaction[]
+): [BuxferTransaction[], BuxferTransaction[]] {
     const existingHashes = new Set(dbTransactions.map(transactionHash));
 
-    // Filter out transactions that have hash values already in the database
-    const deduplicatedTransactions = transactions.filter(tx => !existingHashes.has(transactionHash(tx)));
+    const deduplicatedTransactions: BuxferTransaction[] = [];
+    const duplicateTransactions: BuxferTransaction[] = [];
 
-    return deduplicatedTransactions;
+    for (const tx of addedTransactions) {
+        if (existingHashes.has(transactionHash(tx))) {
+            // The dbTransactions also include ID's that would be returned to the callee
+            duplicateTransactions.push(dbTransactions.find(dbTx => transactionHash(dbTx) === transactionHash(tx))!);
+        } else {
+            deduplicatedTransactions.push(tx);
+        }
+    }
+
+    return [deduplicatedTransactions, duplicateTransactions];
 }
 
 export function getTransactionsDateRange(transactions: BuxferTransaction[]): [string, string] {

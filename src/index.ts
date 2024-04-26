@@ -1,5 +1,6 @@
 export {
     BuxferTransaction,
+    AddTransactionsResponse,
     BuxferAccount
 } from './interface'
 
