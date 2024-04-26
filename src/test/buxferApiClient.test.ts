@@ -49,7 +49,7 @@ describe('BuxferApiClient', () => {
         queryParams.endDate = "2024-02-01";
 
         const dbTransactions = await buxferClient.getTransactions(queryParams);
-        expect(dbTransactions.length).toBeGreaterThan(0);
+        expect(dbTransactions.length).toBe(81);
 
         const [earliestTrxDate, latestTrxDate] = getTransactionsDateRange(dbTransactions);
 
@@ -62,12 +62,13 @@ describe('BuxferApiClient', () => {
         expect(expectedLatestTransactionDate >= new Date(latestTrxDate)).toBeTruthy();
 
         // Validate deduplicate logic
-        let deduplicatedTrx = filterDuplicateTransactions(dbTransactions, dbTransactions);
+        let [deduplicatedTrx, duplicatedTransactions] = filterDuplicateTransactions(dbTransactions, dbTransactions);
         expect(deduplicatedTrx.length).toBe(0);
+        expect(duplicatedTransactions.length).toBeGreaterThan(0);
 
     });
 
-    it.only('should add deduplicate and delete a mock transaction from Buxfer DB', async () => {
+    it('should add deduplicate and delete a mock transaction from Buxfer DB', async () => {
         const nowDate = format(new Date(), "yyyy-MM-dd");
         const mockTrx: BuxferTransaction = {
             description: "mock",
