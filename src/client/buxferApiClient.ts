@@ -72,7 +72,7 @@ export class BuxferApiClient {
                 { email: this.email, password: this.password }
             );
             this.authToken = response.token;
-            this.log(`Login successful. Token: ${this.authToken}`, "info");
+            this.log(`Buxfer login successful.`, "info");
         } catch (error: unknown) {
             if (error instanceof Error) {
                 this.log(`Error during login: ${error.message}`, "error");
@@ -86,7 +86,7 @@ export class BuxferApiClient {
     private log(msg: string, level: "info" | "error") {
         switch (level) {
             case "info":
-                // todo - configure per verbosity level
+                // console.log(msg) todo - configure per verbosity level
                 break;
             case "error":
                 console.error(msg);
