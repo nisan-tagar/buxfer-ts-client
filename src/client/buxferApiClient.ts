@@ -55,23 +55,25 @@ interface BuxferResponseContainer {
 
 
 export class BuxferApiClient {
-    private readonly baseUrl: string;
     private authToken: string | null = null;
-    private batchSize: number = 20; // Class variable for bulk size
+    private authTokenCreation: Date | null = null;
+    private readonly authTokenExpirationDurationMinutes = 30;
+
+    private readonly batchSize = 20; // Class variable for bulk size
+    private readonly baseUrl = 'https://www.buxfer.com/api';
 
     constructor(private readonly email: string, private readonly password: string) {
-        this.baseUrl = 'https://www.buxfer.com/api';
     }
 
     public async login(): Promise<void> {
         try {
-            // TODO: Implement token refresh mechanism if needed
             const response = await this.makeApiRequest<LoginResponseData>(
                 'login',
                 'POST',
                 { email: this.email, password: this.password }
             );
             this.authToken = response.token;
+            this.authTokenCreation = new Date();
             this.log(`Buxfer login successful.`, "info");
         } catch (error: unknown) {
             if (error instanceof Error) {
@@ -93,12 +95,33 @@ export class BuxferApiClient {
         }
     }
 
+    private isTokenExpired(): boolean {
+        if (this.authTokenCreation == null) {
+            return true;
+        }
+        const nowDate = new Date();
+        const timeDifferenceInMilliseconds = Math.abs(nowDate.getTime() - this.authTokenCreation.getTime());
+        const timeDifferenceInMinutes = timeDifferenceInMilliseconds / (1000 * 60); // Convert milliseconds to minutes
+
+        return timeDifferenceInMinutes > this.authTokenExpirationDurationMinutes;
+    }
+
+    private async refreshToken(endpoint: string) {
+        if (endpoint != 'login' && (this.authToken == null || this.isTokenExpired())) {
+            // makeApiRequest method is also serving the login request so we avoid the deadlock by checking the endpoint...
+            await this.login();
+        }
+    }
+
     private async makeApiRequest<T>(
         endpoint: string,
         method: 'GET' | 'POST',
         data?: Object,
         params?: Record<string, any>
     ): Promise<T> {
+
+        await this.refreshToken(endpoint);
+
         const config: AxiosRequestConfig = {
             url: `${this.baseUrl}/${endpoint}`,
             method,
@@ -277,3 +300,4 @@ export class BuxferApiClient {
     }
 
 }
+

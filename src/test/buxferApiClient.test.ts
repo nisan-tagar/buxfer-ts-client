@@ -9,18 +9,14 @@ dotenv.config({ path: 'src/test/.env.test' }); // Load environment variables fro
 const username = process.env.TEST_USERNAME;
 const password = process.env.TEST_PASSWORD;
 
+expect(username).toBeDefined();
+expect(password).toBeDefined();
+
 describe('BuxferApiClient', () => {
-    let buxferClient: BuxferApiClient;
-
-    beforeEach(async () => {
-        expect(username).toBeDefined();
-        expect(password).toBeDefined();
-
-        buxferClient = new BuxferApiClient(username!, password!);
-        await buxferClient.login();
-    });
+    let buxferClient: BuxferApiClient = new BuxferApiClient(username!, password!);
 
     it('should log in successfully', async () => {
+        await buxferClient.login();
         expect(buxferClient['authToken']).not.toBeNull();
     });
 
