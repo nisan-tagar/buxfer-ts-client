@@ -49,7 +49,7 @@ describe('BuxferApiClient', () => {
         queryParams.endDate = "2024-02-01";
 
         const dbTransactions = await buxferClient.getTransactions(queryParams);
-        expect(dbTransactions.length).toBeGreaterThan(0);;
+        expect(dbTransactions.length).toBeGreaterThan(0);
 
         const [earliestTrxDate, latestTrxDate] = getTransactionsDateRange(dbTransactions);
 
