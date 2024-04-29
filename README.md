@@ -58,14 +58,20 @@ queryParams.endDate = "2024-02-01";
 let dbTransactions = await buxferClient.getTransactions(queryParams);
 
 // Add a transaction.
-let transactions: BuxferTransaction[];
 
 // Populate new Buxfer transactions to be added
-// ...
-
-let batchesAddedSuccessfully: number = await client.sendBulkAddedTransactions(
-  transactions
-);
+const nowDate = format(new Date(), "yyyy-MM-dd");
+const mockTrx: BuxferTransaction = {
+    description: "mock",
+    amount: 12345,
+    date: nowDate,
+    type: "income",
+    status: "cleared",
+    accountId: 1398435
+}
+// Add new mock transaction to DB
+let response: AddTransactionsResponse = await buxferClient.addTransactions(new Array(mockTrx), true);
+const mockTrxId = response.addedTransactionIds[0];
 ```
 
 ---

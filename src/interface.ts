@@ -58,16 +58,29 @@ export interface AddTransactionsResponse {
     failedBatches: number;
 }
 
+// TODO - Separate BuxferTransaction POST transaction_add vs GET transactions API payload object options
 export interface BuxferTransaction {
     id?: number;
     description: string;
     amount: number;
-    accountId: string;
+    expenseAmount?: number;
+    accountId: number;
+    accountName?: string;
     fromAccountId?: string;
     toAccountId?: string;
+    fromAccount?: {
+        id: number;
+        name: string;
+    };
+    toAccount?: {
+        id: number;
+        name: string;
+    };
     date: string; // Format: "YYYY-MM-DD"
     tags?: string; // Comma-separated tag names
+    tagNames?: string[];
     type: 'expense' | 'income' | 'refund' | 'transfer' | 'investment_buy' | 'investment_sell' | 'capital_gain' | 'capital_loss' | 'sharedBill' | 'paidForFriend' | 'settlement';
+    transactionType?: string;
     status: 'cleared' | 'pending';
     // Parameters for type = sharedBill
     payers?: [{
@@ -85,6 +98,8 @@ export interface BuxferTransaction {
     //Parameters for type = paidForFriend
     paidBy?: 'uid' | 'email';
     paidFor?: 'uid' | 'email';
+    isFutureDated?: boolean;
+    isPending?: boolean;
 }
 
 export interface BuxferTag {

@@ -2,12 +2,13 @@ import dotenv from 'dotenv';
 import { format } from "date-fns";
 import { BuxferApiClient } from '../client/buxferApiClient';
 import { BuxferTransaction, GetTransactionsQueryParameters, AddTransactionsResponse } from '../interface';
-import { filterDuplicateTransactions, getTransactionsDateRange } from '../client/transactionUtils';
+import { getTransactionsDateRange } from '../client/transactionUtils';
 
 dotenv.config({ path: 'src/test/.env.test' }); // Load environment variables from .env.test
 
 const username = process.env.TEST_USERNAME;
 const password = process.env.TEST_PASSWORD;
+const accountId = process.env.TEST_ACCOUNT_ID;
 
 expect(username).toBeDefined();
 expect(password).toBeDefined();
@@ -39,7 +40,7 @@ describe('BuxferApiClient', () => {
         expect(transactions.length).toBeGreaterThan(0);
     });
 
-    it('should retrieve up to 100 transactions by date range and deduplicate', async () => {
+    it('should retrieve up to 100 transactions within the requested date range', async () => {
         const queryParams = new GetTransactionsQueryParameters();
         queryParams.startDate = "2024-01-01";
         queryParams.endDate = "2024-02-01";
@@ -57,22 +58,18 @@ describe('BuxferApiClient', () => {
         const expectedLatestTransactionDate = new Date(queryParams.endDate);
         expect(expectedLatestTransactionDate >= new Date(latestTrxDate)).toBeTruthy();
 
-        // Validate deduplicate logic
-        let [deduplicatedTrx, duplicatedTransactions] = filterDuplicateTransactions(dbTransactions, dbTransactions);
-        expect(deduplicatedTrx.length).toBe(0);
-        expect(duplicatedTransactions.length).toBeGreaterThan(0);
-
     });
 
-    it('should add deduplicate and delete a mock transaction from Buxfer DB', async () => {
+    it('should add, re-add + deduplicate and delete a mock transaction from Buxfer DB', async () => {
         const nowDate = format(new Date(), "yyyy-MM-dd");
         const mockTrx: BuxferTransaction = {
-            description: "mock",
-            amount: 12345,
-            date: nowDate,
-            type: "income",
-            status: "cleared",
-            accountId: "1398435"
+            "accountId": Number(accountId),
+            "date": nowDate,
+            "amount": 60,
+            "description": "זיכוי מביט מפלוני אלמוני",
+            "status": "cleared",
+            "type": "income",
+            "tags": "buxfer-ts-client-ut-mock"
         }
         // Add new mock transaction to DB
         let response: AddTransactionsResponse = await buxferClient.addTransactions(new Array(mockTrx), true);
