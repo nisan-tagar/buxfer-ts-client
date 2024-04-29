@@ -79,7 +79,7 @@ const mockTrxId = response.addedTransactionIds[0];
 ## Roadmap
 - Support automatic paginator to retrieve more than 100 transactions at a time by the client getter signatures
 - Support status update transactions using the POST transaction_edit API
-- Build on [moneyman](https://github.com/daniel-hauser/moneyman) application.
+- Integrate with [moneyman](https://github.com/daniel-hauser/moneyman) application.
 
 ---
 
