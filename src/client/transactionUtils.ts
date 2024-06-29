@@ -4,11 +4,16 @@ export function transactionHash(tx: BuxferTransaction): string {
     const parts = [
         tx.date,
         tx.accountId,
-        tx.description,
+        getSanitizedDescriptionHash(tx),
         `absoluteAmount:${Math.abs(tx.amount)}`,
     ];
 
     return parts.map((p) => String(p ?? "").trim()).join("_");
+}
+
+function getSanitizedDescriptionHash(tx: BuxferTransaction): string {
+    let desc = tx.description;
+    return desc.split("|")[0].replaceAll(" ", "");
 }
 
 export function filterDuplicateTransactions(

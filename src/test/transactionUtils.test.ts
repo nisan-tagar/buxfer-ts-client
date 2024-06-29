@@ -10,7 +10,7 @@ describe.only('transactionUtilsTest', () => {
 
         const mockExistingTrx: BuxferTransaction = {
             "id": 207071073,
-            "description": "mock expense",
+            "description": "mock expense | some memo here might be modified",
             "date": "2024-04-26",
             "type": "expense",
             "transactionType": "expense",
@@ -28,7 +28,7 @@ describe.only('transactionUtilsTest', () => {
             "accountId": 123456,
             "date": "2024-04-26",
             "amount": -11.43,
-            "description": "mock expense",
+            "description": "mock expense | some memo here",
             "status": "cleared",
             "type": "expense",
           }
