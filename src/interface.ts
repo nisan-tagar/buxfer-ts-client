@@ -52,7 +52,9 @@ export class GetTransactionsQueryParameters {
 
 export interface AddTransactionsResponse {
     addedTransactionIds: string[];
-    duplicatedTransactionIds: string[];
+    existingTransactionIds: string[];
+    updatedTransactionIds: string[];
+    pendingTransactionIds: string[];
     transactionBatchSize: number;
     successfulBatches: number;
     failedBatches: number;

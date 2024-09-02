@@ -1,5 +1,5 @@
 import axios, { AxiosRequestConfig } from 'axios';
-import { getTransactionsDateRange, filterDuplicateTransactions } from './transactionUtils'
+import { getTransactionsDateRange, splitTransactions } from './transactionUtils'
 import {
     BuxferTransaction, BuxferAccount, BuxferLoan,
     BuxferTag, BuxferBudget, BuxferReminder, BuxferGroup, BuxferContact,
@@ -151,20 +151,11 @@ export class BuxferApiClient {
     }
 
     /**
-     * Send batched POST requests in parallel
+     * Add new transactions, update status changes, skip existing transactions to avoid DB duplications.
      * @param scrappedTransactions List of Buxfer transactions to be added, typically from a web scraping application
-     * @param deduplicate Select if transaction deduplication against the buxfer db is required
      * @returns AddTransactionsResponse response object summary
      */
-    public async addTransactions(scrappedTransactions: BuxferTransaction[], deduplicate: boolean): Promise<AddTransactionsResponse> {
-        if (!deduplicate) {
-            return await this.addTransactionBulks(scrappedTransactions);
-        }
-
-        return await this.deduplicateAddTransactionBulks(scrappedTransactions);
-    }
-
-    private async deduplicateAddTransactionBulks(scrappedTransactions: BuxferTransaction[]): Promise<AddTransactionsResponse> {
+    public async addUpdateTransactions(scrappedTransactions: BuxferTransaction[]): Promise<AddTransactionsResponse> {
         // Resolve transaction date range
         const [startDate, endDate] = getTransactionsDateRange(scrappedTransactions);
 
@@ -174,10 +165,14 @@ export class BuxferApiClient {
         params.endDate = endDate;
         const dbTransactions: BuxferTransaction[] = await this.getTransactions(params);
 
+        // Handle status update transactions without duplications
+        // Amount and description are the same, date is different. The original transaction should be updated from pending to status cleared 
+
         // Deduplicate transactions
-        const [uniqueTransactions, duplicatedTransactions] = filterDuplicateTransactions(scrappedTransactions, dbTransactions);
-        const response = await this.addTransactionBulks(uniqueTransactions);
-        response.duplicatedTransactionIds = duplicatedTransactions.map(trx => trx.id ? trx.id.toString() : "");
+        const [newTransactions, updateRequiredTransactions, existingTransactions] = splitTransactions(scrappedTransactions, dbTransactions);
+        const response = await this.addTransactionBulks(newTransactions);
+        response.updatedTransactionIds = await this.updateTransactions(updateRequiredTransactions);
+        response.existingTransactionIds = existingTransactions.map(trx => trx.id ? trx.id.toString() : "");
         return response;
     }
 
@@ -186,7 +181,9 @@ export class BuxferApiClient {
         let batchIndex = 0;
         const responseContainer: AddTransactionsResponse = {
             addedTransactionIds: [],
-            duplicatedTransactionIds: [],
+            existingTransactionIds: [],
+            updatedTransactionIds: [],
+            pendingTransactionIds: [],
             transactionBatchSize: this.batchSize,
             successfulBatches: 0,
             failedBatches: 0
@@ -214,6 +211,30 @@ export class BuxferApiClient {
             batchIndex++;
         }
         return responseContainer;
+    }
+
+    private async updateTransactions(bodies: BuxferTransaction[]): Promise<string[]> {
+        const updatedTransactionIds: string[] = [];
+        for (const body of bodies) {
+            await this.updateTransaction(body).then(updatedTransaction => {
+                if (updatedTransaction.id) {
+                    updatedTransactionIds.push(updatedTransaction.id.toString())
+                }
+            }).catch(error => {
+                this.log(`Error updating transaction: ${body.id} - ${error}`, "error");
+            });
+
+        }
+        return updatedTransactionIds;
+    }
+
+    /**
+     * Each call to this method will edit a single existing transaction ID on Buxfer DB
+     * @param updatedBuxferTransaction Buxfer transaction to be updated
+     * @returns empty object
+     */
+    async updateTransaction(updatedBuxferTransaction: BuxferTransaction): Promise<BuxferTransaction> {
+        return await this.makeApiRequest<BuxferTransaction>("transaction_edit", "POST", updatedBuxferTransaction)
     }
 
     /**

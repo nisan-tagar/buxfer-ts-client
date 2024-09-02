@@ -60,27 +60,36 @@ describe('BuxferApiClient', () => {
 
     });
 
-    it('should add, re-add + deduplicate and delete a mock transaction from Buxfer DB', async () => {
+    it('should add, re-add existing and deduplicate, re-add updated and update, finally delete a mock transaction from Buxfer DB', async () => {
         const nowDate = format(new Date(), "yyyy-MM-dd");
         const mockTrx: BuxferTransaction = {
             "accountId": Number(accountId),
             "date": nowDate,
             "amount": 60,
             "description": "זיכוי מביט מפלוני אלמוני",
-            "status": "cleared",
+            "status": "pending",
             "type": "income",
             "tags": "buxfer-ts-client-ut-mock"
         }
         // Add new mock transaction to DB
-        let response: AddTransactionsResponse = await buxferClient.addTransactions(new Array(mockTrx), true);
+        let response: AddTransactionsResponse = await buxferClient.addUpdateTransactions(new Array(mockTrx));
         expect(response.addedTransactionIds.length).toBe(1);
-        expect(response.duplicatedTransactionIds.length).toBe(0);
+        expect(response.existingTransactionIds.length).toBe(0);
         const mockTrxId = response.addedTransactionIds[0];
 
         // Add the same transaction a second time
-        response = await buxferClient.addTransactions(new Array(mockTrx), true);
+        response = await buxferClient.addUpdateTransactions(new Array(mockTrx));
         expect(response.addedTransactionIds.length).toBe(0);
-        expect(response.duplicatedTransactionIds.length).toBe(1);
+        expect(response.updatedTransactionIds.length).toBe(0);
+        expect(response.existingTransactionIds.length).toBe(1);
+
+        // Change status to cleared transaction, add the updated transaction a third time
+        mockTrx.status = "cleared";
+        mockTrx.description = "זיכוי מביט מפלוני אלמוני - מעודכן";
+        response = await buxferClient.addUpdateTransactions(new Array(mockTrx));
+        expect(response.addedTransactionIds.length).toBe(0);
+        expect(response.updatedTransactionIds.length).toBe(1);
+        expect(response.existingTransactionIds.length).toBe(0);
 
         // delete mock transactions
         const deleteResponse = await buxferClient.deleteTransaction(mockTrxId);
