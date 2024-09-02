@@ -33,7 +33,7 @@ describe.only('transactionUtilsTest', () => {
             "type": "expense",
             "transactionType": "expense",
             "amount": 22,
-            "expenseAmount": 11.43,
+            "expenseAmount": 22,
             "accountId": 123456,
             "accountName": "buxfer account name",
             "tags": "",
@@ -48,7 +48,7 @@ describe.only('transactionUtilsTest', () => {
             "accountId": 123456,
             "date": "2024-04-26",
             "amount": -11.43,
-            "description": "mock expense | some memo here, might be modified in status update ... ",
+            "description": "mock expense | some memo here",
             "status": "cleared",
             "type": "expense",
         }

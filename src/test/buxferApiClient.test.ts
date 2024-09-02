@@ -71,21 +71,20 @@ describe('BuxferApiClient', () => {
             "type": "income",
             "tags": "buxfer-ts-client-ut-mock"
         }
-        // Add new mock transaction to DB
+        // Add new mock transaction to DB - expect new addition
         let response: AddTransactionsResponse = await buxferClient.addUpdateTransactions(new Array(mockTrx));
         expect(response.addedTransactionIds.length).toBe(1);
         expect(response.existingTransactionIds.length).toBe(0);
         const mockTrxId = response.addedTransactionIds[0];
 
-        // Add the same transaction a second time
+        // Add the same transaction a second time - expect existing flag
         response = await buxferClient.addUpdateTransactions(new Array(mockTrx));
         expect(response.addedTransactionIds.length).toBe(0);
         expect(response.updatedTransactionIds.length).toBe(0);
         expect(response.existingTransactionIds.length).toBe(1);
 
-        // Change status to cleared transaction, add the updated transaction a third time
+        // Change status to cleared transaction, add the updated transaction a third time - expect an update flag
         mockTrx.status = "cleared";
-        mockTrx.description = "זיכוי מביט מפלוני אלמוני - מעודכן";
         response = await buxferClient.addUpdateTransactions(new Array(mockTrx));
         expect(response.addedTransactionIds.length).toBe(0);
         expect(response.updatedTransactionIds.length).toBe(1);

@@ -28,15 +28,11 @@ export function splitTransactions(
 }
 
 function updateRequired(dbTx: BuxferTransaction, scrappedTrx: BuxferTransaction): boolean {
-    // Same transaction can change description and status
+    // We want to align to what is currently registered on the institutions db that was scrapped
+    // Same transaction can change status
     let updateRequired: boolean = false;
     if (dbTx.status != scrappedTrx.status) {
         dbTx.status = scrappedTrx.status;
-        updateRequired = true;
-    }
-
-    if (getSanitizedDescriptionHash(dbTx) != getSanitizedDescriptionHash(scrappedTrx)) {
-        dbTx.description = scrappedTrx.description;
         updateRequired = true;
     }
     return updateRequired;
@@ -57,7 +53,7 @@ export function transactionHash(tx: BuxferTransaction): string {
     const parts = [
         tx.date,
         tx.accountId,
-        // getSanitizedDescriptionHash(tx),
+        getSanitizedDescriptionHash(tx),
         `absoluteAmount:${Math.abs(tx.amount)}`
     ];
 

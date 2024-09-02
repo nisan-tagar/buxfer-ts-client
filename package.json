@@ -1,6 +1,6 @@
 {
   "name": "buxfer-ts-client",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "An easy-to-use Type Script client library to Buxfer API.",
   "main": "lib/index.js",
   "scripts": {
