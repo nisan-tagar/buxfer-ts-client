@@ -153,6 +153,7 @@ export class BuxferApiClient {
     /**
      * Add new transactions, update status changes, skip existing transactions to avoid DB duplications.
      * @param scrappedTransactions List of Buxfer transactions to be added, typically from a web scraping application
+     * @param updateTransactions Boolean to select if updating existing transactions is required
      * @returns AddTransactionsResponse response object summary
      */
     public async addTransactions(scrappedTransactions: BuxferTransaction[], updateTransactions: boolean): Promise<AddTransactionsResponse> {
@@ -168,18 +169,21 @@ export class BuxferApiClient {
         // Handle status update transactions without duplications
         // Amount and description are the same, date is different. The original transaction should be updated from pending to status cleared 
 
-        // Deduplicate transactions
+        // Split transactions: new, existing, existing the can be status updated
         const [newTransactions, updateRequiredTransactions, existingTransactions] = splitTransactions(scrappedTransactions, dbTransactions);
+
+        // Add new transaction to Buxfer
         const response = await this.addTransactionBulks(newTransactions);
 
         const existingTransactionIds: string[] = existingTransactions.map(trx => trx.id ? trx.id.toString() : "");
+        const updateRequiredTransactionIds: string[] = updateRequiredTransactions.map(trx => trx.id ? trx.id.toString() : "")
         if (updateTransactions) {
             response.updatedTransactionIds = await this.updateTransactions(updateRequiredTransactions);
             response.existingTransactionIds = existingTransactionIds;
         }
         else {
-            // update required are as existing if update disabled
-            response.existingTransactionIds = [...existingTransactionIds, ...updateRequiredTransactions.map(trx => trx.id ? trx.id.toString() : "")]
+            // Assume update required are as existing if update disabled
+            response.existingTransactionIds = [...existingTransactionIds, ...updateRequiredTransactionIds]
         }
 
         return response;
