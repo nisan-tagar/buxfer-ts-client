@@ -60,7 +60,7 @@ describe('BuxferApiClient', () => {
 
     });
 
-    it('should add, re-add existing and deduplicate, re-add updated and update, finally delete a mock transaction from Buxfer DB', async () => {
+    it('test deduplicate and update logic, finally delete a mock transaction from Buxfer DB', async () => {
         const nowDate = format(new Date(), "yyyy-MM-dd");
         const mockTrx: BuxferTransaction = {
             "accountId": Number(accountId),
@@ -72,20 +72,20 @@ describe('BuxferApiClient', () => {
             "tags": "buxfer-ts-client-ut-mock"
         }
         // Add new mock transaction to DB - expect new addition
-        let response: AddTransactionsResponse = await buxferClient.addUpdateTransactions(new Array(mockTrx));
+        let response: AddTransactionsResponse = await buxferClient.addTransactions(new Array(mockTrx), true);
         expect(response.addedTransactionIds.length).toBe(1);
         expect(response.existingTransactionIds.length).toBe(0);
         const mockTrxId = response.addedTransactionIds[0];
 
-        // Add the same transaction a second time - expect existing flag
-        response = await buxferClient.addUpdateTransactions(new Array(mockTrx));
+        // Add the same transaction a second time - expect existing flag to signal deduplication
+        response = await buxferClient.addTransactions(new Array(mockTrx), true);
         expect(response.addedTransactionIds.length).toBe(0);
         expect(response.updatedTransactionIds.length).toBe(0);
         expect(response.existingTransactionIds.length).toBe(1);
 
-        // Change status to cleared transaction, add the updated transaction a third time - expect an update flag
+        // Change status to cleared transaction, add the updated transaction a third time with update enabled - expect an update flag
         mockTrx.status = "cleared";
-        response = await buxferClient.addUpdateTransactions(new Array(mockTrx));
+        response = await buxferClient.addTransactions(new Array(mockTrx), true);
         expect(response.addedTransactionIds.length).toBe(0);
         expect(response.updatedTransactionIds.length).toBe(1);
         expect(response.existingTransactionIds.length).toBe(0);

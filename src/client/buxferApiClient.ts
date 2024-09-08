@@ -155,7 +155,7 @@ export class BuxferApiClient {
      * @param scrappedTransactions List of Buxfer transactions to be added, typically from a web scraping application
      * @returns AddTransactionsResponse response object summary
      */
-    public async addUpdateTransactions(scrappedTransactions: BuxferTransaction[]): Promise<AddTransactionsResponse> {
+    public async addTransactions(scrappedTransactions: BuxferTransaction[], updateTransactions: boolean): Promise<AddTransactionsResponse> {
         // Resolve transaction date range
         const [startDate, endDate] = getTransactionsDateRange(scrappedTransactions);
 
@@ -171,8 +171,17 @@ export class BuxferApiClient {
         // Deduplicate transactions
         const [newTransactions, updateRequiredTransactions, existingTransactions] = splitTransactions(scrappedTransactions, dbTransactions);
         const response = await this.addTransactionBulks(newTransactions);
-        response.updatedTransactionIds = await this.updateTransactions(updateRequiredTransactions);
-        response.existingTransactionIds = existingTransactions.map(trx => trx.id ? trx.id.toString() : "");
+
+        const existingTransactionIds: string[] = existingTransactions.map(trx => trx.id ? trx.id.toString() : "");
+        if (updateTransactions) {
+            response.updatedTransactionIds = await this.updateTransactions(updateRequiredTransactions);
+            response.existingTransactionIds = existingTransactionIds;
+        }
+        else {
+            // update required are as existing if update disabled
+            response.existingTransactionIds = [...existingTransactionIds, ...updateRequiredTransactions.map(trx => trx.id ? trx.id.toString() : "")]
+        }
+
         return response;
     }
 
