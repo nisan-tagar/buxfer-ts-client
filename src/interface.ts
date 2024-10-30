@@ -81,9 +81,9 @@ export interface BuxferTransaction {
     date: string; // Format: "YYYY-MM-DD"
     tags?: string; // Comma-separated tag names
     tagNames?: string[];
-    type: 'expense' | 'income' | 'refund' | 'transfer' | 'investment_buy' | 'investment_sell' | 'capital_gain' | 'capital_loss' | 'sharedBill' | 'paidForFriend' | 'settlement';
+    type: "expense" | "income" | "refund" | "transfer" | "investment_buy" | "investment_sell" | "capital_gain" | "capital_loss" | "sharedBill" | "paidForFriend" | "settlement";
     transactionType?: string;
-    status: 'cleared' | 'pending';
+    status?: "cleared" | "pending";
     // Parameters for type = sharedBill
     payers?: [{
         email: string;
@@ -95,11 +95,11 @@ export interface BuxferTransaction {
     }];
     isEvenSplit?: boolean;
     // Parameters for type = loan
-    loanedBy?: 'uid' | 'email';
-    borrowedBy?: 'uid' | 'email';
+    loanedBy?: "uid" | "email";
+    borrowedBy?: "uid" | "email";
     //Parameters for type = paidForFriend
-    paidBy?: 'uid' | 'email';
-    paidFor?: 'uid' | 'email';
+    paidBy?: "uid" | "email";
+    paidFor?: "uid" | "email";
     isFutureDated?: boolean;
     isPending?: boolean;
 }
