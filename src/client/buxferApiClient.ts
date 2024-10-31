@@ -166,9 +166,6 @@ export class BuxferApiClient {
         params.endDate = endDate;
         const dbTransactions: BuxferTransaction[] = await this.getTransactions(params);
 
-        // Handle status update transactions without duplications
-        // Amount and description are the same, date is different. The original transaction should be updated from pending to status cleared 
-
         // Split transactions: new, existing, existing the can be status updated
         const [newTransactions, updateRequiredTransactions, existingTransactions] = splitTransactions(scrappedTransactions, dbTransactions);
 
@@ -205,7 +202,7 @@ export class BuxferApiClient {
             const batch = bodies.slice(i, i + this.batchSize);
 
             // Map each body in the current batch to a POST request promise
-            const promises = batch.map(body => this.makeApiRequest<BuxferTransaction>("transaction_add", 'POST', body));
+            const promises = batch.map(body => this.addTransaction(body));
 
             // Wait for all POST requests in the current batch to complete
             await Promise.all(promises).then(responses => {
@@ -226,6 +223,17 @@ export class BuxferApiClient {
         return responseContainer;
     }
 
+
+    /**
+     * Each call to this method will add a single new transaction on Buxfer DB
+     * @param updatedBuxferTransaction Buxfer transaction to be updated
+     * @returns The added Buxfer transaction returned from the API
+     */
+    async addTransaction(addedBuxferTransaction: BuxferTransaction): Promise<BuxferTransaction> {
+        addedBuxferTransaction.status = undefined; // TODO - Remove when issue is resolved on Buxfer API
+        return await this.makeApiRequest<BuxferTransaction>("transaction_add", 'POST', addedBuxferTransaction)
+    }
+
     private async updateTransactions(bodies: BuxferTransaction[]): Promise<string[]> {
         const updatedTransactionIds: string[] = [];
         for (const body of bodies) {
@@ -244,7 +252,7 @@ export class BuxferApiClient {
     /**
      * Each call to this method will edit a single existing transaction ID on Buxfer DB
      * @param updatedBuxferTransaction Buxfer transaction to be updated
-     * @returns empty object
+     * @returns The updated Buxfer transaction returned from the API
      */
     async updateTransaction(updatedBuxferTransaction: BuxferTransaction): Promise<BuxferTransaction> {
         return await this.makeApiRequest<BuxferTransaction>("transaction_edit", "POST", updatedBuxferTransaction)
