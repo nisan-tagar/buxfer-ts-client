@@ -62,21 +62,25 @@ let dbTransactions = await buxferClient.getTransactions(queryParams);
 // Populate new Buxfer transactions to be added
 const nowDate = format(new Date(), "yyyy-MM-dd");
 const mockTrx: BuxferTransaction = {
-    description: "mock",
-    amount: 12345,
-    date: nowDate,
-    type: "income",
-    status: "cleared",
-    accountId: 1398435
-}
+  description: "mock",
+  amount: 12345,
+  date: nowDate,
+  type: "income",
+  status: "cleared",
+  accountId: 1398435,
+};
 // Add new mock transaction to DB
-let response: AddTransactionsResponse = await buxferClient.addTransactions(new Array(mockTrx), true);
+let response: AddTransactionsResponse = await buxferClient.addTransactions(
+  new Array(mockTrx),
+  true,
+);
 const mockTrxId = response.addedTransactionIds[0];
 ```
 
 ---
 
 ## Roadmap
+
 - Support automatic paginator to retrieve more than 100 transactions at a time by the client getter signatures
 - Support status update transactions using the POST transaction_edit API
 - Integrate with [moneyman](https://github.com/daniel-hauser/moneyman) application.
