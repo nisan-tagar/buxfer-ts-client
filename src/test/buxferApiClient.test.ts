@@ -84,7 +84,7 @@ describe("BuxferApiClient", () => {
     };
     // Add new mock transaction to DB
     let response: AddTransactionsResponse = await buxferClient.addTransactions(
-      new Array(mockTrx)
+      new Array(mockTrx),
     );
     expect(response.addedTransactionIds.length).toBe(1);
     expect(response.duplicatedTransactionIds.length).toBe(0);
@@ -114,7 +114,8 @@ describe("BuxferApiClient", () => {
     };
     // Add new future mock transaction to DB
     let response: AddTransactionsResponse = await buxferClient.addTransactions(
-      new Array(mockTrx)    );
+      new Array(mockTrx),
+    );
     // TRX should be ignored because future transactions can't be deduplicated due to Buxfer API limitations ...
     expect(response.addedTransactionIds.length).toBe(0);
     expect(response.duplicatedTransactionIds.length).toBe(0);
