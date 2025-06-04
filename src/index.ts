@@ -1,9 +1,7 @@
 export {
-    BuxferTransaction,
-    AddTransactionsResponse,
-    BuxferAccount
-} from './interface'
+  BuxferTransaction,
+  AddTransactionsResponse,
+  BuxferAccount,
+} from "./interface";
 
-export {
-    BuxferApiClient
-} from './client/buxferApiClient'
+export { BuxferApiClient } from "./client/buxferApiClient";
