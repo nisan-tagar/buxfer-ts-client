@@ -212,5 +212,5 @@ Licensed under the MIT License. You can use this library for any kind of softwar
 
 # Change Log
 
-1.1.4 Rule engine, rule scraper, bulk edit support.
+1.2.0 Rule engine, rule scraper, bulk edit support.
 1.0.0 First version.
