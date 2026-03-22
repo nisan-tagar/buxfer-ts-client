@@ -64,6 +64,29 @@ interface BuxferResponseContainer {
   // GetLoansResponseData | GetTagsResponseData | GetBudgetsResponseData | GetRemindersResponseData | GetGroupsResponseData | GetContactsResponseData;
 }
 
+// Strips read-only/GET-only fields, keeping only what transaction_edit accepts
+function toEditPayload(tx: BuxferTransaction): Partial<BuxferTransaction> {
+  return {
+    id: tx.id,
+    description: tx.description,
+    amount: tx.amount,
+    accountId: tx.accountId,
+    fromAccountId: tx.fromAccountId,
+    toAccountId: tx.toAccountId,
+    date: tx.date,
+    tags: tx.tags,
+    type: tx.type,
+    status: tx.status,
+    payers: tx.payers,
+    sharers: tx.sharers,
+    isEvenSplit: tx.isEvenSplit,
+    loanedBy: tx.loanedBy,
+    borrowedBy: tx.borrowedBy,
+    paidBy: tx.paidBy,
+    paidFor: tx.paidFor,
+  };
+}
+
 export class BuxferApiClient {
   private authToken: string | null = null;
   private authTokenCreation: Date | null = null;
@@ -250,6 +273,53 @@ export class BuxferApiClient {
         })
         .catch((error) => {
           this.log(`Error with batch: ${batchIndex} - ${error}`, "error");
+          responseContainer.failedBatches++;
+        });
+      batchIndex++;
+    }
+    return responseContainer;
+  }
+
+  /**
+   * Send updated transactions in batched parallel POST requests to transaction_edit.
+   * Each transaction must have an id field set.
+   * @param bodies List of Buxfer transactions to be edited
+   * @returns AddTransactionsResponse summary (addedTransactionIds holds edited IDs)
+   */
+  public async editTransactionBulks(
+    bodies: BuxferTransaction[],
+  ): Promise<AddTransactionsResponse> {
+    let batchIndex = 0;
+    const responseContainer: AddTransactionsResponse = {
+      addedTransactionIds: [],
+      duplicatedTransactionIds: [],
+      ignoredTransactionIds: [],
+      transactionBatchSize: this.batchSize,
+      successfulBatches: 0,
+      failedBatches: 0,
+    };
+    for (let i = 0; i < bodies.length; i += this.batchSize) {
+      const batch = bodies.slice(i, i + this.batchSize);
+
+      const promises = batch.map((body) =>
+        this.makeApiRequest<BuxferTransaction>("transaction_edit", "POST", toEditPayload(body)),
+      );
+
+      await Promise.all(promises)
+        .then((responses) => {
+          this.log(
+            `Edit batch ${batchIndex} completed: ${responses.length} transactions updated`,
+            "info",
+          );
+          responseContainer.successfulBatches++;
+          responses.forEach((trx) => {
+            if (trx.id) {
+              responseContainer.addedTransactionIds.push(trx.id.toString());
+            }
+          });
+        })
+        .catch((error) => {
+          this.log(`Error with edit batch: ${batchIndex} - ${error}`, "error");
           responseContainer.failedBatches++;
         });
       batchIndex++;

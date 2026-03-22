@@ -13,6 +13,7 @@ export class GetTransactionsQueryParameters {
   accountId!: string;
   accountName!: string;
   tagId!: string;
+  tagName!: string;
   // startDate AND endDate OR month: date can be specified as "10 feb 2008", or "2008-02-10". month can be specified as "feb08", "feb 08", or "feb 2008".
   startDate!: string;
   endDate!: string;
@@ -35,6 +36,7 @@ export class GetTransactionsQueryParameters {
       accountId: this.accountId,
       accountName: this.accountName,
       tagId: this.tagId,
+      tagName: this.tagName,
       startDate: this.startDate,
       endDate: this.endDate,
       month: this.month,
@@ -169,4 +171,45 @@ export interface BuxferContact {
   name: string;
   email: boolean;
   balance: number;
+}
+
+// Rule engine types
+
+export type RuleFilterField = "description" | "amount" | "date" | "account" | "type";
+
+export type RuleFilterOperator =
+  | "contains"
+  | "contains_phrase"
+  | "equals"
+  | "starts_with"
+  | "matches_wildcard"
+  | "lt"
+  | "gt"
+  | "lte"
+  | "gte";
+
+export interface RuleFilter {
+  field: RuleFilterField;
+  operator: RuleFilterOperator;
+  value: string;
+}
+
+export type RuleActionType =
+  | "add_tags"
+  | "set_description"
+  | "remove_words_from_description"
+  | "set_type"
+  | "set_status"
+  | "set_transfer_source_account"
+  | "set_transfer_destination_account";
+
+export interface RuleAction {
+  type: RuleActionType;
+  value: string;
+}
+
+export interface BuxferRule {
+  id: string;
+  filters: RuleFilter[];
+  actions: RuleAction[];
 }
