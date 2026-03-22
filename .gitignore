@@ -75,6 +75,10 @@ web_modules/
 .env
 .env.test
 
+# config
+config.rules.jsonc
+.scrapedrules.json
+
 # parcel-bundler cache (https://parceljs.org/)
 .cache
 .parcel-cache
